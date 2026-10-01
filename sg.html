@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>생기복덕 일람표 | 오사마리</title>
+<meta name="description" content="생년월일과 성별을 입력하면 한 해의 생기·천의·절체·유혼·화해·복덕·절명·귀혼을 날짜별로 확인할 수 있는 생기복덕 일람표입니다.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;600&family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root{
+    --good:#3f7d4f; --good-bg:#e8f5ea;
+    --neutral:#a9821b; --neutral-bg:#fdf3d8;
+    --bad:#b23a2e; --bad-bg:#fbe4e0;
+  }
+
+  .tool-section{ padding:20px 20px 70px; max-width:1080px; margin:0 auto; }
+  .field-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .field-row .field{ flex:1; min-width:140px; }
+  .field label{ display:block; font-size:13px; color:var(--ink-soft); margin-bottom:5px; }
+  .field input[type=date], .field input[type=number]{
+    width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px;
+    font-size:15px; color:var(--ink); font-family:var(--sans);
+  }
+  .field input:focus{ outline:2px solid var(--accent-soft); border-color:var(--accent); }
+  .birth-select-row{ display:flex; gap:8px; }
+  .birth-select-row select{
+    flex:1; width:100%; padding:9px 8px; border:1px solid var(--line); border-radius:8px;
+    font-size:15px; color:var(--ink); font-family:var(--sans); background:#fff;
+  }
+  .birth-select-row select:focus{ outline:2px solid var(--accent-soft); border-color:var(--accent); }
+  .err-msg{ font-size:12px; color:var(--error); margin-top:6px; display:none; }
+  .err-msg.show{ display:block; }
+
+  .confirm-btn{
+    width:100%; margin-top:12px; padding:11px 10px; border:none; border-radius:8px;
+    background:var(--accent); color:#fff; font-size:15px; font-weight:600;
+    font-family:var(--sans); cursor:pointer; transition:opacity .15s ease;
+  }
+  .confirm-btn:hover{ opacity:.9; }
+  .confirm-btn:active{ opacity:.8; }
+
+  .summary-line{ font-size:14px; color:var(--ink); margin:4px 0; }
+  .summary-line b{ color:var(--accent-ink); }
+
+  table.term-table{ width:100%; border-collapse:collapse; font-size:13px; margin-top:14px; }
+  table.term-table th, table.term-table td{ border:1px solid var(--line); padding:8px 6px; text-align:center; }
+  table.term-table th{ background:var(--accent-soft); color:var(--accent-ink); font-size:12px; }
+  table.term-table td.desc{ text-align:left; color:var(--ink-soft); font-size:12px; }
+  .grade-chip{ display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+  .grade-chip.good{ background:var(--good-bg); color:var(--good); }
+  .grade-chip.neutral{ background:var(--neutral-bg); color:var(--neutral); }
+  .grade-chip.bad{ background:var(--bad-bg); color:var(--bad); }
+
+  .legend-row{ display:flex; gap:16px; flex-wrap:wrap; margin-top:14px; font-size:12px; color:var(--ink-soft); }
+  .legend-row span{ display:flex; align-items:center; gap:6px; }
+  .legend-dot{ width:11px; height:11px; border-radius:3px; display:inline-block; }
+
+  .cal-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  @media (max-width:900px){ .cal-grid{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:520px){ .cal-grid{ grid-template-columns:1fr; } }
+  .cal-month{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px; }
+  .cal-month h3{ font-family:var(--serif); font-size:15px; font-weight:600; margin:0 0 10px; text-align:center; }
+  .cal-week-head, .cal-days{ display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+  .cal-week-head span{ font-size:10px; color:var(--ink-soft); text-align:center; padding-bottom:4px; }
+  .cal-day{
+    position:relative; aspect-ratio:1/1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-radius:6px; font-size:11px; color:var(--ink); background:var(--page); cursor:default;
+  }
+  .cal-day.empty{ background:transparent; }
+  .cal-day .tag{ font-size:9px; font-weight:700; margin-top:1px; }
+  .cal-day.good{ background:var(--good-bg); color:var(--good); }
+  .cal-day.neutral{ background:var(--neutral-bg); color:var(--neutral); }
+  .cal-day.bad{ background:var(--bad-bg); color:var(--bad); }
+  .cal-day.today{ box-shadow:0 0 0 2px var(--accent) inset; }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="nav">
+    <div class="logo">오사마리</div>
+    <ul class="navlinks">
+      <li><a href="index.html#planner">시스템행거 설계</a></li>
+      <li><a href="ptr.html">팬트리</a></li>
+      <li><a href="ct.html">커튼</a></li>
+      <li><a href="bl.html">블라인드</a></li>
+      <li><a href="est.html">견적문의</a></li>
+      <li><a href="calc.html">시스템행거&슬라이딩도어</a></li>
+      <li><a href="jm.html">중문</a></li>
+      <li><a href="sg.html">생기복덕</a></li>
+    </ul>
+    <div class="navphone">010-5049-7702</div>
+  </div>
+</header>
+
+<section class="hero">
+  <p class="eyebrow">생기복덕 일람표</p>
+  <h1>생년월일만 입력하면 한 해의 길일이 한눈에</h1>
+  <p>전통 생기복덕 택일법에 따라 생기·천의·복덕(대길), 유혼·귀혼(평운), 절체·화해·절명(흉)을 계산해 연간 달력으로 보여드립니다. 이사·개업·시공 날짜를 정하실 때 참고하세요.</p>
+</section>
+
+<section class="tool-section">
+  <div class="section-head">
+    <p class="kicker">정보 입력</p>
+    <h2>생년월일과 성별을 입력해 주세요</h2>
+    <p>나이는 한국식 세는나이(태어나면 1살, 새해마다 1살 추가)로 계산합니다.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="col-left">
+      <div class="panel">
+        <p class="p-section-title">1. 생년월일</p>
+        <div class="field">
+          <div class="birth-select-row">
+            <select id="birthYear" aria-label="출생 연도"></select>
+            <select id="birthMonth" aria-label="출생 월"></select>
+            <select id="birthDay" aria-label="출생 일"></select>
+          </div>
+          <input type="hidden" id="birthDate" value="1990-01-01">
+        </div>
+
+        <p class="p-section-title" style="margin-top:18px;">2. 성별</p>
+        <div class="btn-row two" id="genderBtns">
+          <button class="opt active" data-v="M">남자</button>
+          <button class="opt" data-v="F">여자</button>
+        </div>
+
+        <p class="p-section-title" style="margin-top:18px;">3. 조회 연도</p>
+        <div class="field">
+          <input type="number" id="calYear" value="2026" min="1900" max="2200">
+        </div>
+        <button type="button" class="confirm-btn" id="confirmBtn">확인</button>
+        <div class="err-msg" id="errMsg">생년월일과 조회 연도를 다시 확인해 주세요.</div>
+      </div>
+    </div>
+
+    <div class="col-right">
+      <div class="panel">
+        <p class="p-section-title">계산 결과</p>
+        <p class="summary-line">한국식 나이: <b id="rAge">-</b></p>
+        <p class="summary-line">본명궁(시작괘): <b id="rPalace">-</b></p>
+
+        <table class="term-table">
+          <thead><tr><th>용어</th><th>괘</th><th>해당 지지</th><th>등급</th><th>의미</th></tr></thead>
+          <tbody id="termTableBody"></tbody>
+        </table>
+
+        <div class="legend-row">
+          <span><span class="legend-dot" style="background:var(--good-bg); border:1px solid var(--good);"></span>대길 (생기·천의·복덕)</span>
+          <span><span class="legend-dot" style="background:var(--neutral-bg); border:1px solid var(--neutral);"></span>평운 (유혼·귀혼)</span>
+          <span><span class="legend-dot" style="background:var(--bad-bg); border:1px solid var(--bad);"></span>흉 (절체·화해·절명)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tool-section" id="calendarSection">
+  <div class="section-head">
+    <p class="kicker">연간 달력</p>
+    <h2 id="calTitle">2026년 생기복덕 달력</h2>
+    <p>날짜 칸의 글자는 용어의 첫 글자입니다 (생=생기, 천=천의, 체=절체, 유=유혼, 화=화해, 복=복덕, 명=절명, 귀=귀혼). 칸 위에 마우스를 올리면 자세한 설명이 나옵니다.</p>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+</section>
+
+<section class="quote" id="quote">
+  <div class="quote-inner">
+    <div>
+      <h2>견적, 전화 한 통이면 충분합니다</h2>
+      <p>이사·시공 날짜를 함께 상담해 드립니다.</p>
+    </div>
+    <div class="quote-actions">
+      <a href="tel:01050497702">전화 상담 <strong>010-5049-7702</strong></a>
+      <a href="https://naver.me/5SSxqMpi" target="_blank" rel="noopener">네이버 예약 바로가기</a>
+      <a href="https://instagram.com/pyeonhanson" target="_blank" rel="noopener">인스타그램 시공 사례</a>
+      <a href="https://blog.naver.com/xriona" target="_blank" rel="noopener">네이버 블로그</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="fbrand">오사마리</div>
+  <div>편한손 운영 · 010-5049-7702 · 진주 · 사천 · 삼천포 · 순천</div>
+</footer>
+
+<script>
+/* ===================== 생기복덕 계산 엔진 ===================== */
+
+// 팔괘 (top, mid, bottom) 비트, 1=양(--), 0=음(- -)... 여기서는 문자열 '1'/'0'
+const TRIGRAM_BITS = {
+  '건':'111', '태':'011', '리':'101', '진':'001',
+  '손':'110', '감':'010', '간':'100', '곤':'000'
+};
+const BITS_TO_TRIGRAM = Object.fromEntries(Object.entries(TRIGRAM_BITS).map(([k,v]) => [v,k]));
+
+const HANJA = { '건':'乾','태':'兌','리':'離','진':'震','손':'巽','감':'坎','간':'艮','곤':'坤' };
+
+// 8단계 효 변화 순서: 상효, 중효, 하효, 중효, 상효, 중효, 하효, 중효
+const CHANGE_SEQUENCE = ['top','mid','bottom','mid','top','mid','bottom','mid'];
+const TERM_NAMES = ['생기','천의','절체','유혼','화해','복덕','절명','귀혼'];
+const TERM_HANJA = { '생기':'生氣','천의':'天宜','절체':'絶體','유혼':'遊魂','화해':'禍害','복덕':'福德','절명':'絶命','귀혼':'歸魂' };
+const TERM_GRADE = { '생기':'good','천의':'good','복덕':'good','유혼':'neutral','귀혼':'neutral','절체':'bad','화해':'bad','절명':'bad' };
+const TERM_GRADE_LABEL = { good:'대길', neutral:'평운', bad:'흉' };
+const TERM_DESC = {
+  '생기':'경영하는 바가 길하고 복록을 누리며 매사 자신감이 넘칩니다.',
+  '천의':'중화와 변화를 함께하며 시험합격·승진·치료에 길합니다.',
+  '절체':'상해의 기운이 강해 몸과 마음에 부담이 있을 수 있습니다.',
+  '유혼':'마음이 안정되지 않고 분주한, 반흉반길의 날입니다.',
+  '화해':'손재·관재·구설 등 재앙이나 모략의 기운이 있습니다.',
+  '복덕':'승진·합격·발전 등 만사형통하는 대길일입니다.',
+  '절명':'매사 부진하고 다툼이 많은 대흉일입니다.',
+  '귀혼':'때를 기다려야 하는, 반길반흉의 날입니다.'
+};
+const TERM_ABBR = { '생기':'생','천의':'천','절체':'체','유혼':'유','화해':'화','복덕':'복','절명':'명','귀혼':'귀' };
+
+function deriveEightTerms(startTrigram){
+  let cur = TRIGRAM_BITS[startTrigram].split('');
+  const flipIdx = { top:0, mid:1, bottom:2 };
+  const result = {}; // term -> trigram
+  CHANGE_SEQUENCE.forEach((line, i) => {
+    const idx = flipIdx[line];
+    cur[idx] = cur[idx] === '1' ? '0' : '1';
+    result[TERM_NAMES[i]] = BITS_TO_TRIGRAM[cur.join('')];
+  });
+  return result;
+}
+
+// 12지지(0=자~11=해) -> 팔괘 배정 (후천팔괘 12지지 배당)
+const BRANCH_NAMES = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
+const BRANCH_TO_TRIGRAM = ['감','간','간','진','손','손','리','곤','곤','태','건','건'];
+
+// 남/여 나이별 시작궁(본명궁) 계산
+const ORDER_MALE = ['리','곤','태','건','감','간','진','손'];
+const ORDER_FEMALE = ['감','건','태','곤','리','손','진','간'];
+
+function buildPalaceSeq(order, skipName, maxAge){
+  const seq = [];
+  let idx = 0;
+  let skipped = false;
+  let guard = 0;
+  while (seq.length < maxAge && guard < maxAge * 3 + 20) {
+    guard++;
+    const p = order[idx % order.length];
+    if (p === skipName && !skipped) {
+      skipped = true;
+      idx++;
+      continue;
+    }
+    seq.push(p);
+    idx++;
+  }
+  return seq;
+}
+
+function startPalace(age, gender){
+  const order = gender === 'M' ? ORDER_MALE : ORDER_FEMALE;
+  const skip = gender === 'M' ? '곤' : '간';
+  const seq = buildPalaceSeq(order, skip, age);
+  return seq[age - 1];
+}
+
+// 날짜 -> 60갑자 지지(0~11) 계산
+// 기준: 2026-09-20(UTC) = 정유일(丁酉日), 지지 index 9(酉)
+const REF_UTC = Date.UTC(2026, 8, 20);
+const REF_BRANCH_IDX = 9;
+
+function branchIndexForUTC(y, m, d){
+  const target = Date.UTC(y, m, d);
+  const diffDays = Math.round((target - REF_UTC) / 86400000);
+  let idx = (REF_BRANCH_IDX + diffDays) % 12;
+  if (idx < 0) idx += 12;
+  return idx;
+}
+
+/* ===================== UI 로직 ===================== */
+
+let gender = 'M';
+
+document.getElementById('genderBtns').addEventListener('click', e => {
+  const btn = e.target.closest('.opt');
+  if (!btn) return;
+  gender = btn.dataset.v;
+  document.querySelectorAll('#genderBtns .opt').forEach(b => b.classList.toggle('active', b === btn));
+  render();
+});
+
+document.getElementById('birthDate').addEventListener('input', render);
+document.getElementById('calYear').addEventListener('input', render);
+
+document.getElementById('confirmBtn').addEventListener('click', () => {
+  render();
+  const target = document.getElementById('calendarSection');
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+/* ---- 생년월일 콤보박스(연/월/일) ---- */
+(function setupBirthSelects(){
+  const yearSel = document.getElementById('birthYear');
+  const monthSel = document.getElementById('birthMonth');
+  const daySel = document.getElementById('birthDay');
+  const hiddenInput = document.getElementById('birthDate');
+
+  const [initY, initM, initD] = hiddenInput.value.split('-').map(Number);
+  const nowYear = new Date().getFullYear();
+
+  // 연도: 오래된 해부터 선택하기 쉽도록 최근 연도부터 100년 전까지 내림차순으로 나열
+  for (let y = nowYear; y >= nowYear - 100; y--) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = `${y}년`;
+    if (y === initY) opt.selected = true;
+    yearSel.appendChild(opt);
+  }
+  for (let m = 1; m <= 12; m++) {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = `${m}월`;
+    if (m === initM) opt.selected = true;
+    monthSel.appendChild(opt);
+  }
+
+  function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+
+  function fillDays(preferredDay) {
+    const y = parseInt(yearSel.value, 10), m = parseInt(monthSel.value, 10);
+    const dCount = daysInMonth(y, m);
+    const prevVal = preferredDay || parseInt(daySel.value, 10) || initD;
+    daySel.innerHTML = '';
+    for (let d = 1; d <= dCount; d++) {
+      const opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = `${d}일`;
+      if (d === prevVal) opt.selected = true;
+      daySel.appendChild(opt);
+    }
+    // 월이 바뀌어 기존 일자가 존재하지 않으면(예: 31일→2월) 마지막 날짜로 보정
+    if (!daySel.value) daySel.value = String(dCount);
+  }
+  fillDays(initD);
+
+  function syncHiddenAndRender() {
+    const y = yearSel.value, m = String(monthSel.value).padStart(2, '0'), d = String(daySel.value).padStart(2, '0');
+    hiddenInput.value = `${y}-${m}-${d}`;
+    hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  yearSel.addEventListener('change', () => { fillDays(); syncHiddenAndRender(); });
+  monthSel.addEventListener('change', () => { fillDays(); syncHiddenAndRender(); });
+  daySel.addEventListener('change', syncHiddenAndRender);
+})();
+
+function renderTermTable(trigramToTerm, eightTerms){
+  const tbody = document.getElementById('termTableBody');
+  tbody.innerHTML = '';
+  TERM_NAMES.forEach(term => {
+    const trigram = eightTerms[term];
+    const branchIdxList = [];
+    BRANCH_TO_TRIGRAM.forEach((tg, i) => { if (tg === trigram) branchIdxList.push(i); });
+    const branchLabel = branchIdxList.map(i => BRANCH_NAMES[i]).join('·');
+    const grade = TERM_GRADE[term];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><b>${term}</b><br><span style="font-size:10px;color:var(--ink-soft);">${TERM_HANJA[term]}</span></td>
+      <td>${trigram}(${HANJA[trigram]})</td>
+      <td>${branchLabel}</td>
+      <td><span class="grade-chip ${grade}">${TERM_GRADE_LABEL[grade]}</span></td>
+      <td class="desc">${TERM_DESC[term]}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderCalendar(year, trigramToTerm){
+  const calGrid = document.getElementById('calGrid');
+  calGrid.innerHTML = '';
+  document.getElementById('calTitle').textContent = `${year}년 생기복덕 달력`;
+
+  const today = new Date();
+  const isThisYear = today.getFullYear() === year;
+  const todayUTCms = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+
+  const weekHeadHtml = '<span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>';
+
+  for (let m = 0; m < 12; m++) {
+    const monthDiv = document.createElement('div');
+    monthDiv.className = 'cal-month';
+
+    const firstWeekday = new Date(Date.UTC(year, m, 1)).getUTCDay();
+    const daysInMonth = new Date(Date.UTC(year, m + 1, 0)).getUTCDate();
+
+    let daysHtml = '';
+    for (let i = 0; i < firstWeekday; i++) {
+      daysHtml += '<div class="cal-day empty"></div>';
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const branchIdx = branchIndexForUTC(year, m, d);
+      const trigram = BRANCH_TO_TRIGRAM[branchIdx];
+      const term = trigramToTerm[trigram];
+      const grade = TERM_GRADE[term];
+      const abbr = TERM_ABBR[term];
+      const isToday = isThisYear && Date.UTC(year, m, d) === todayUTCms;
+      const title = `${year}년 ${m + 1}월 ${d}일 · ${BRANCH_NAMES[branchIdx]}(${trigram}) · ${term}(${TERM_GRADE_LABEL[grade]}) - ${TERM_DESC[term]}`;
+      daysHtml += `<div class="cal-day ${grade}${isToday ? ' today' : ''}" title="${title}">${d}<span class="tag">${abbr}</span></div>`;
+    }
+
+    monthDiv.innerHTML = `
+      <h3>${m + 1}월</h3>
+      <div class="cal-week-head">${weekHeadHtml}</div>
+      <div class="cal-days">${daysHtml}</div>
+    `;
+    calGrid.appendChild(monthDiv);
+  }
+}
+
+function render(){
+  const birthVal = document.getElementById('birthDate').value;
+  const year = parseInt(document.getElementById('calYear').value, 10);
+  const errMsg = document.getElementById('errMsg');
+
+  if (!birthVal || !year) {
+    errMsg.classList.add('show');
+    return;
+  }
+
+  const birthYear = parseInt(birthVal.slice(0, 4), 10);
+  const age = year - birthYear + 1;
+
+  if (isNaN(age) || age < 1 || age > 150) {
+    errMsg.classList.add('show');
+    document.getElementById('rAge').textContent = '-';
+    document.getElementById('rPalace').textContent = '-';
+    document.getElementById('termTableBody').innerHTML = '';
+    document.getElementById('calGrid').innerHTML = '';
+    return;
+  }
+  errMsg.classList.remove('show');
+
+  const palace = startPalace(age, gender);
+  const eightTerms = deriveEightTerms(palace); // term -> trigram
+  const trigramToTerm = {};
+  Object.entries(eightTerms).forEach(([term, trigram]) => { trigramToTerm[trigram] = term; });
+
+  document.getElementById('rAge').textContent = `${age}세 (한국식 세는나이, ${gender === 'M' ? '남자' : '여자'})`;
+  document.getElementById('rPalace').textContent = `${palace}(${HANJA[palace]})`;
+
+  renderTermTable(trigramToTerm, eightTerms);
+  renderCalendar(year, trigramToTerm);
+}
+
+render();
+</script>
+<script src="cart.js?v=2"></script>
+
+</body>
+</html>
